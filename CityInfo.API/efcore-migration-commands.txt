@@ -1,0 +1,7 @@
+﻿--Uses Microsoft.EntityFrameworkCore.Tools package
+
+Add-Migration CityInfoDbInitialMigration
+
+To undo this action, use Remove-Migration
+
+Update-Database
