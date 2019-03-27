@@ -1,4 +1,5 @@
-﻿using CityInfo.API.Models;
+﻿using AutoMapper;
+using CityInfo.API.Models;
 using CityInfo.API.Services;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
@@ -16,9 +17,14 @@ namespace CityInfo.API.Controllers
         private ILogger<PointsOfInterestController> _logger;
         private IMailService _mailService;
 
-        public PointsOfInterestController(ILogger<PointsOfInterestController> logger, IMailService mailService) {
+        private ICityInfoRepository _cityInfoRepository;
+
+        public PointsOfInterestController(ILogger<PointsOfInterestController> logger, IMailService mailService,
+        ICityInfoRepository cityInfoRepository)
+        {
             _logger = logger;
             _mailService = mailService;
+            _cityInfoRepository = cityInfoRepository;
             //HttpContext.RequestServices.GetService();
         }
 
@@ -29,14 +35,33 @@ namespace CityInfo.API.Controllers
             {
                 //throw new Exception("Sample exception");
 
-                var city = CitiesDataStore.Current.Cities.FirstOrDefault(c => c.Id == cityId);
-                if (city == null)
+                //var city = CitiesDataStore.Current.Cities.FirstOrDefault(c => c.Id == cityId);
+                //if (city == null)
+                if (!_cityInfoRepository.CityExists(cityId))
                 {
                     return NotFound();
                 }
-                return Ok(city.PointOfInterests);
+                //return Ok(city.PointOfInterests);
+                var pointsOfInterestForCity = _cityInfoRepository.GetPointOfInterestsForCity(cityId);
+                /*
+                var pointOfInterestResults = new List<PointOfInterestDto>();
+                foreach (var poi in pointsOfInterestForCity)
+                {
+                    pointOfInterestResults.Add(
+                        new PointOfInterestDto()
+                        {
+                            Id = poi.Id,
+                            Name = poi.Name,
+                            Description = poi.Description
+                        }
+                    );
+                }
+                */
+                var pointOfInterestResults = Mapper.Map<IEnumerable<PointOfInterestDto>>(pointsOfInterestForCity);
+                return Ok(pointOfInterestResults);
             }
-            catch (Exception ex) {
+            catch (Exception ex)
+            {
                 _logger.LogCritical($"Exception while getting the points of interests for city with id {cityId}.", ex);
                 return StatusCode(500, "A problem happened while handling your request.");
             }
@@ -46,6 +71,7 @@ namespace CityInfo.API.Controllers
         [HttpGet("{cityId}/pointOfInterest/{id}", Name = "GetPointOfInterest")]
         public IActionResult GetPointOfInterest(int cityId, int id)
         {
+            /*
             var city = CitiesDataStore.Current.Cities.FirstOrDefault(c => c.Id == cityId);
             if (city == null)
             {
@@ -59,6 +85,29 @@ namespace CityInfo.API.Controllers
                 return NotFound();
             }
             return Ok(pointOfInterest);
+             */
+            if (!_cityInfoRepository.CityExists(cityId))
+            {
+                _logger.LogInformation($"City with id {cityId} wasn't found when accessing point of interests.");
+                return NotFound();
+            }
+
+            var pointOfInterest = _cityInfoRepository.GetPointOfInterestForCity(cityId, id);
+            if (pointOfInterest == null)
+            {
+                return NotFound();
+            }
+            /* 
+                        var pointOfInterestResult = new PointOfInterestDto()
+                        {
+                            Id = pointOfInterest.Id,
+                            Name = pointOfInterest.Name,
+                            Description = pointOfInterest.Description
+                        };
+            */
+            var pointOfInterestResult = Mapper.Map<PointOfInterestDto>(pointOfInterest);
+
+            return Ok(pointOfInterestResult);
         }
 
         [HttpPost("{cityId}/pointOfInterest/")]
