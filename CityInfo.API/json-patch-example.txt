@@ -1,0 +1,12 @@
+﻿[
+   {
+   	"op": "replace",
+   	"path": "/name",
+   	"value": "Market Square"
+   },
+    {
+   	"op": "replace",
+   	"path": "/description",
+   	"value": "Market Square"
+   }
+]
